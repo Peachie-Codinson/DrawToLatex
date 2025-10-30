@@ -21,7 +21,7 @@ def home():
     return {"status": "Backend running successfully!"}
 
 
-@app.post("/ocr")
+@app.api_route("/ocr", methods=["POST", "OPTIONS"])
 async def ocr(
     image: bytes = File(...),
     authorization: str = Header(None)  # Expect: "Bearer <user_api_key>"
