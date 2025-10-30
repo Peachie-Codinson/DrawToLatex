@@ -1,15 +1,16 @@
-import base64
 from fastapi import FastAPI, File, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from openai import OpenAI
+import base64
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",              # for local React dev
-        "https://draw-to-latex.vercel.app/",       # your deployed site
+        "https://draw-to-latex.vercel.app",
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -20,22 +21,20 @@ app.add_middleware(
 def home():
     return {"status": "Backend running successfully!"}
 
+# ✅ OPTIONS preflight
+@app.options("/ocr")
+async def options_ocr():
+    return JSONResponse(content={"ok": True})
 
-@app.api_route("/ocr", methods=["POST", "OPTIONS"])
-async def ocr(
-    image: bytes = File(...),
-    authorization: str = Header(None)  # Expect: "Bearer <user_api_key>"
-):
+# ✅ Main OCR endpoint
+@app.post("/ocr")
+async def ocr(image: bytes = File(...), authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid API key header.")
-
     api_key = authorization.split(" ")[1]
     client = OpenAI(api_key=api_key)
-
     b64img = base64.b64encode(image).decode()
-
-    try:
-        result = client.chat.completions.create(
+    result = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
@@ -55,7 +54,4 @@ async def ocr(
                 },
             ],
         )
-
-        return {"latex": result.choices[0].message.content}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return {"latex": result.choices[0].message.content}
