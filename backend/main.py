@@ -9,7 +9,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",              # for local React dev
-        "https://ocr-latex.vercel.app",       # your deployed site
+        "https://draw-to-latex.vercel.app/",       # your deployed site
     ],
     allow_credentials=True,
     allow_methods=["*"],
