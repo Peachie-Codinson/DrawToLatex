@@ -16,6 +16,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def home():
+    return {"status": "Backend running successfully!"}
+
 
 @app.post("/ocr")
 async def ocr(

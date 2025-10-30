@@ -70,7 +70,7 @@ function App() {
     formData.append("image", blob);
 
     try {
-      const res = await fetch("http://localhost:8000/ocr", {
+      const res = await fetch("https://drawtolatex.onrender.com/ocr", {
         // ⚠️ Replace with your Render URL when deploying
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}` },
