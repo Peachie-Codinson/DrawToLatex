@@ -134,15 +134,30 @@ const CanvasBoard = ({
   /* --------------------------------------------------------------- */
   useEffect(() => {
     const handler = (e) => {
+      // If the user is typing in an editable control, let the control handle undo/redo
+      const t = e.target;
+      const tag = (t?.tagName || "").toUpperCase();
+      const isEditable =
+        t?.isContentEditable ||
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT";
+
+      if (isEditable) return; // <-- do NOT handle canvas undo/redo
+
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
-        else if (e.key === "y" || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+        if (e.key === "z" && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [undo, redo]);
-
   /* --------------------------------------------------------------- */
   /*  Mouse coordinate scaling                                       */
   /* --------------------------------------------------------------- */
@@ -269,7 +284,9 @@ const CanvasBoard = ({
         redoStack={redoStack}
         isLoading={isLoading}
         historySize={historySize}
-      setHistorySize={setHistorySize}
+        setHistorySize={setHistorySize}
+        apiKey={apiKey}
+        setApiKey={setApiKey}
       />
 
 
@@ -290,26 +307,23 @@ const CanvasBoard = ({
         />
       </div>
 
-      <div className="flex gap-3 justify-center">
-        <input
-          type="password"
-          placeholder="OpenAI API Key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          className="px-4 py-2.5 border rounded-lg w-64 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          style={{ backgroundColor: "white", borderColor: "#d1d5db" }}
-        />
-        <button
-          onClick={transcribe}
-          disabled={isLoading}
-          className="px-6 py-2.5 rounded-lg font-medium text-white transition-colors"
-          style={{
-            backgroundColor: isLoading ? "#6b7280" : "#3b82f6",
-          }}
-        >
-          {isLoading ? "Processing..." : "Transcribe"}
-        </button>
-      </div>
+      {/* Bottom controls (no API key input here anymore) */}
+<div className="flex gap-3 justify-center items-center">
+  {!apiKey && (
+    <span className="text-xs text-amber-600 dark:text-amber-400">
+      Set your API key in Settings to enable OCR.
+    </span>
+  )}
+  <button
+    onClick={transcribe}
+    disabled={isLoading || !apiKey}
+    className="px-6 py-2.5 rounded-lg font-medium text-white transition-colors disabled:opacity-60"
+    style={{ backgroundColor: isLoading ? "#6b7280" : "#3b82f6" }}
+  >
+    {isLoading ? "Processing..." : "Transcribe"}
+  </button>
+</div>
+  
     </div>
   );
 };
