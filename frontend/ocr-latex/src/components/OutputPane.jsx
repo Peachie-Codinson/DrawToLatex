@@ -49,14 +49,28 @@ export default function OutputPane({
 
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
             <span className="font-medium">Font:</span>
-            <input
-              type="range"
-              min={14}
-              max={48}
-              value={fontSize}
-              onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
-              className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer"
-            />
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 relative group">
+  <span className="font-medium">Font:</span>
+  <input
+    type="range"
+    min={14}
+    max={48}
+    value={fontSize}
+    onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
+    onInput={(e) => {
+      const progress = ((e.target.value - 14) / (48 - 14)) * 100;
+      e.target.style.setProperty('--progress', `${progress}%`);
+    }}
+    className="w-24 h-2 rounded-full appearance-none cursor-pointer focus:outline-none custom-range"
+    aria-label="Font size"
+  />
+  <span className="w-10 text-center font-mono text-xs">{fontSize}px</span>
+
+  {/* Tooltip */}
+  <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+    {fontSize}px
+  </span>
+</label>
             <span className="w-10 text-center font-mono text-xs">{fontSize}px</span>
           </label>
 
@@ -71,9 +85,9 @@ export default function OutputPane({
 
       {/* Reorderable list */}
       <div
-        className="flex-1 min-h-0 overflow-y-auto p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm"
-        style={{ fontSize: `${fontSize}px`, scrollbarGutter: "stable" }}
-      >
+  className="flex-1 min-h-0 overflow-y-auto p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm custom-scrollbar"
+  style={{ fontSize: `${fontSize}px` }}
+>
         {blocks.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400 italic py-8">
             No equations yet. Click “+ New Equation” to start.
