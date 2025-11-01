@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import Toolbar from "./Toolbar";
 
-const MAX_HISTORY = 10;
 const ERASER_FACTOR = 1.5;
 
 const CanvasBoard = ({
@@ -32,17 +31,34 @@ const CanvasBoard = ({
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
 
+  // NEW: user-configurable history size (default 20)
+  const [historySize, setHistorySize] = useState(20);
+
   /* --------------------------------------------------------------- */
   /*  History                                                        */
   /* --------------------------------------------------------------- */
   const pushState = useCallback(() => {
     const dataUrl = canvasRef.current.toDataURL();
     setUndoStack((prev) => {
+      // keep at most historySize + 1 (baseline + N actions)
+      const limit = Math.max(1, historySize) + 1;
       const next = [...prev, dataUrl];
-      return next.slice(-MAX_HISTORY - 1);
+      return next.slice(-limit);
     });
-    setRedoStack([]);
-  }, []);
+    setRedoStack([]); // any new action clears redo history
+  }, [historySize]);
+
+  // When history size changes, trim stacks gracefully
+  useEffect(() => {
+    setUndoStack((prev) => {
+      const limit = Math.max(1, historySize) + 1;
+      return prev.slice(-limit);
+    });
+    setRedoStack((prev) => {
+      const limit = Math.max(0, historySize);
+      return prev.slice(-limit);
+    });
+  }, [historySize]);
 
   const restore = useCallback((dataUrl) => {
     const img = new Image();
@@ -53,22 +69,33 @@ const CanvasBoard = ({
   const undo = useCallback(() => {
     if (undoStack.length <= 1) return;
     setUndoStack((prev) => {
-      const popped = prev.pop();
-      setRedoStack((r) => [...r, popped]);
-      restore(prev[prev.length - 1]);
-      return [...prev];
+      const copy = [...prev];
+      const popped = copy.pop(); // current state
+      setRedoStack((r) => {
+        const limit = Math.max(0, historySize);
+        const next = [...r, popped].slice(-limit);
+        return next;
+      });
+      const last = copy[copy.length - 1];
+      restore(last);
+      return copy;
     });
-  }, [undoStack, restore]);
+  }, [undoStack.length, restore, historySize]);
 
   const redo = useCallback(() => {
     if (!redoStack.length) return;
     setRedoStack((prev) => {
-      const next = prev.pop();
-      setUndoStack((u) => [...u, next]);
-      restore(next);
-      return [...prev];
+      const copy = [...prev];
+      const nextState = copy.pop();
+      setUndoStack((u) => {
+        const limit = Math.max(1, historySize) + 1;
+        const next = [...u, nextState].slice(-limit);
+        return next;
+      });
+      restore(nextState);
+      return copy;
     });
-  }, [redoStack, restore]);
+  }, [redoStack.length, restore, historySize]);
 
   const clearCanvas = useCallback(() => {
     const ctx = ctxRef.current;
@@ -88,7 +115,7 @@ const CanvasBoard = ({
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctxRef.current = ctx;
     pushState();
-  }, [pushState]); // Fixed: added pushState
+  }, [pushState]);
 
   useEffect(() => initCanvas(), [initCanvas]);
 
@@ -241,7 +268,10 @@ const CanvasBoard = ({
         undoStack={undoStack}
         redoStack={redoStack}
         isLoading={isLoading}
+        historySize={historySize}
+      setHistorySize={setHistorySize}
       />
+
 
       <div className="flex-1 mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
         <canvas

@@ -1,3 +1,4 @@
+// src/components/Toolbar.jsx
 import React from "react";
 import {
   PenTool,
@@ -26,6 +27,9 @@ const Toolbar = ({
   undoStack,
   redoStack,
   isLoading,
+  // NEW props
+  historySize,
+  setHistorySize,
 }) => {
   const tools = [
     { id: "brush", icon: PenTool, label: "Brush" },
@@ -174,6 +178,66 @@ const Toolbar = ({
           {tool === "eraser" ? eraserSize : brushSize}
         </span>
       </div>
+
+      {/* NEW: History size control (inside toolbar) */}
+      {/* NEW: History size control (inside toolbar) – STYLED */}
+<div className="flex items-center gap-1.5 pl-3 border-l border-gray-300 dark:border-gray-600">
+  {/* Label with icon-like feel */}
+  <label
+    htmlFor="history-size-input"
+    className="flex items-center text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap select-none cursor-pointer"
+    title="Maximum number of undo/redo steps"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-3.5 h-3.5 mr-1 text-gray-500 dark:text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+    History
+  </label>
+
+  {/* Styled number input */}
+  <input
+    id="history-size-input"
+    type="number"
+    min={1}
+    max={200}
+    value={historySize}
+    onChange={(e) => {
+      const v = parseInt(e.target.value, 10);
+      setHistorySize(
+        Number.isFinite(v) ? Math.max(1, Math.min(20000, v)) : 20
+      );
+    }}
+    disabled={isLoading}
+    className={`
+      w-16 px-2 py-1 text-xs font-mono rounded-md border
+      bg-white dark:bg-gray-800
+      text-gray-900 dark:text-gray-100
+      border-gray-300 dark:border-gray-600
+      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+      transition-all duration-150
+      ${isLoading ? "opacity-50 cursor-not-allowed" : "cursor-text"}
+      placeholder-gray-400 dark:placeholder-gray-500
+    `}
+    style={{
+      // Custom scrollbar for webkit (optional polish)
+      WebkitAppearance: "none",
+    }}
+    onFocus={(e) => e.target.select()}
+    title="Undo/Redo stack size (1–200)"
+    aria-label="History stack size"
+  />
+</div>
     </div>
   );
 };
