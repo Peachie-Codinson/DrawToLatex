@@ -1,13 +1,13 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* globals (index.css / globals.css) */
+mjx-assistive-mml { display: none !important; }
+math, mrow, mfrac, mi, mo, mn { display: none !important; } /* hide native MathML if injected */
+mjx-container svg { overflow: visible; }
+mjx-container, mjx-container svg { overflow: visible !important; }
+mjx-container { isolation: isolate; }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
+mjx-container[jax="SVG"] svg { vertical-align: 0 !important; }
+.equation { line-height: 1.2; }

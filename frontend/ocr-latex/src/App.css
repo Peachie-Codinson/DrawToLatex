@@ -1,3 +1,7 @@
+:root { --mjx-bg: #ffffff; }
+:root.dark { --mjx-bg: #111827; }
+
+
 .App {
   text-align: center;
 }
