@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@atlaskit/drag-and-drop": "^0.15.1",
+    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
+    "@atlaskit/pragmatic-drag-and-drop-flourish": "^2.0.8",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -10,6 +14,7 @@
     "better-react-mathjax": "^2.3.0",
     "bootstrap": "^5.3.8",
     "daisyui": "^5.3.10",
+    "framer-motion": "^12.23.24",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.548.0",
     "mathjax-full": "^3.2.2",

@@ -16,6 +16,10 @@ mjx-container[jax="SVG"] svg { vertical-align: 0 !important; }
   @apply h-2 bg-gray-300 dark:bg-gray-700 cursor-row-resize hover:bg-blue-400 transition-colors;
 }
 
+mjx-container {
+  transition: height 0.1s ease-out;
+}
+
 /* Custom range input styling */
 /* Custom range input styling (unchanged from previous suggestion) */
 .custom-range::-webkit-slider-runnable-track {

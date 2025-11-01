@@ -1,5 +1,5 @@
 // src/components/EquationBlock.jsx
-import React, { useCallback, useRef, useEffect, useState } from "react";
+import React, { useCallback, useRef, useEffect, useState, useMemo} from "react";
 import { MathJax } from "better-react-mathjax";
 import {
   Copy,
@@ -68,38 +68,31 @@ async function svgXMLToPNG(xml, { targetWidthPx, scale = 4 } = {}) {
   ctx.drawImage(img, 0, 0, outW, outH);
   return canvas.toDataURL("image/png");
 }
-
-export default function EquationBlock({ id, index, tex, active, onSelect, onDelete }) {
+export default function EquationBlock({
+  id,
+  index,
+  tex,
+  active,
+  onSelect,
+  onDelete,
+}) {
   const cardRef = useRef(null);
-  const content = (tex || "").trim() || "\\text{(enter text)}";
-  const [copied, setCopied] = useState(false);
+  const content = (tex || "").trim() || "(enter text)";
 
-  // Reset "Copied!" when equation changes
+  const [copied, setCopied] = useState(false);
   useEffect(() => setCopied(false), [tex]);
 
-  // Auto-hide "Copied!" after 2 seconds
-  useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => setCopied(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [copied]);
-
-  // Robustly obtain SVG XML
+  // Use JSDoc for type safety (no TS types in .jsx)
+  /** @type {() => Promise<string>} */
   const getSvgXML = useCallback(async () => {
     const root = cardRef.current;
-
-    // 1) Try live rendered SVG
     const live = root?.querySelector("mjx-container svg");
     if (live) return svgToXML(live);
 
-    // 2) Generate via MathJax
-    const MJ = window?.MathJax;
-    if (!MJ) throw new Error("MathJax not found on window.");
+    const MJ = window.MathJax;
+    if (!MJ) throw new Error("MathJax not found.");
 
-    if (MJ.startup?.promise) {
-      try { await MJ.startup.promise; } catch {}
-    }
+    if (MJ.startup?.promise) await MJ.startup.promise.catch(() => {});
 
     if (typeof MJ.tex2svgPromise === "function") {
       const doc = await MJ.tex2svgPromise(`\\[ ${content} \\]`, { display: true });
@@ -113,8 +106,9 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
       if (svg) return svgToXML(svg);
     }
 
-    throw new Error("Unable to obtain SVG. Ensure MathJax loads 'input/tex' and 'output/svg'.");
+    throw new Error("Unable to obtain SVG.");
   }, [content]);
+
 
   const onCopyPNG = useCallback(async () => {
     try {
@@ -165,6 +159,8 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
     }
   }, [getSvgXML, content]);
 
+  const layoutId = useMemo(() => `eq-${id}`, [id]);
+
   return (
     <div
       ref={cardRef}
@@ -173,7 +169,7 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
         "group relative rounded-xl border p-4 my-4 cursor-pointer transition",
         "bg-gray-50 dark:bg-gray-900",
         "border-gray-200 dark:border-gray-700",
-        active ? "ring-2 ring-blue-500 border-blue-400" : "hover:border-blue-300"
+        active ? "ring-2 ring-blue-500 border-blue-400" : "hover:border-blue-300",
       ].join(" ")}
       onClick={onSelect}
       role="button"
@@ -184,6 +180,7 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
       aria-pressed={active}
       aria-label={`Equation block ${index + 1}${active ? " (active)" : ""}`}
     >
+    
       {/* Action Buttons – Hidden until hover or active */}
       <div
         className={`
@@ -246,12 +243,18 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
         </button>
       </div>
 
-      {/* Rendered Equation */}
-      <MathJax dynamic hideUntilTypeset="every">
-        <div className="flex justify-center items-center w-full min-h-20 py-4">
-          <div>{tex || "(enter text)"}</div>
-        </div>
-      </MathJax>
+      {/* ---------- RENDERED EQUATION ---------- */}
+      <div className="flex justify-center items-center w-full py-4" style={{ minHeight: "5rem" }}>
+        <MathJax
+          dynamic
+          hideUntilTypeset="first"
+          renderMode="post"
+          layoutId={layoutId}
+          layout="position"
+        >
+          <div className="inline-block text-center">{content}</div>
+        </MathJax>
+      </div>
     </div>
   );
 }

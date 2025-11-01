@@ -42,14 +42,13 @@ function App() {
   );
 
   const setLatex = useCallback(
-    (newTex) => {
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === activeId ? { ...b, tex: newTex } : b))
-      );
-    },
-    [activeId]
-  );
-
+  (newTex) => {
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === activeId ? { ...b, tex: newTex } : b))
+    );
+  },
+  [activeId]
+);
   const addBlock = useCallback((initialTex = "") => {
     const nb = { id: makeId(), tex: initialTex };
     setBlocks((prev) => [...prev, nb]);
@@ -150,7 +149,8 @@ function App() {
           setActive={setActive}
           addBlock={addBlock}
           deleteBlock={deleteBlock}
-        />
+          updateBlocksOrder={setBlocks}   // <-- NEW
+        />    
       </div>
     </MathJaxContext>
   );
