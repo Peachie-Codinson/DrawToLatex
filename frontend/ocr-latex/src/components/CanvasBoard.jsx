@@ -1,11 +1,4 @@
-// src/components/CanvasBoard.jsx
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import Toolbar from "./Toolbar";
 
 const ERASER_FACTOR = 1.5;
@@ -30,8 +23,6 @@ const CanvasBoard = ({
 
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-
-  // NEW: user-configurable history size (default 20)
   const [historySize, setHistorySize] = useState(20);
 
   /* --------------------------------------------------------------- */
@@ -40,15 +31,13 @@ const CanvasBoard = ({
   const pushState = useCallback(() => {
     const dataUrl = canvasRef.current.toDataURL();
     setUndoStack((prev) => {
-      // keep at most historySize + 1 (baseline + N actions)
       const limit = Math.max(1, historySize) + 1;
       const next = [...prev, dataUrl];
       return next.slice(-limit);
     });
-    setRedoStack([]); // any new action clears redo history
+    setRedoStack([]);
   }, [historySize]);
 
-  // When history size changes, trim stacks gracefully
   useEffect(() => {
     setUndoStack((prev) => {
       const limit = Math.max(1, historySize) + 1;
@@ -70,7 +59,7 @@ const CanvasBoard = ({
     if (undoStack.length <= 1) return;
     setUndoStack((prev) => {
       const copy = [...prev];
-      const popped = copy.pop(); // current state
+      const popped = copy.pop();
       setRedoStack((r) => {
         const limit = Math.max(0, historySize);
         const next = [...r, popped].slice(-limit);
@@ -134,7 +123,6 @@ const CanvasBoard = ({
   /* --------------------------------------------------------------- */
   useEffect(() => {
     const handler = (e) => {
-      // If the user is typing in an editable control, let the control handle undo/redo
       const t = e.target;
       const tag = (t?.tagName || "").toUpperCase();
       const isEditable =
@@ -143,7 +131,7 @@ const CanvasBoard = ({
         tag === "TEXTAREA" ||
         tag === "SELECT";
 
-      if (isEditable) return; // <-- do NOT handle canvas undo/redo
+      if (isEditable) return;
 
       if (e.ctrlKey || e.metaKey) {
         if (e.key === "z" && !e.shiftKey) {
@@ -158,6 +146,7 @@ const CanvasBoard = ({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [undo, redo]);
+
   /* --------------------------------------------------------------- */
   /*  Mouse coordinate scaling                                       */
   /* --------------------------------------------------------------- */
@@ -265,9 +254,10 @@ const CanvasBoard = ({
   return (
     <div className="flex-1 p-6 flex flex-col bg-gray-50 dark:bg-gray-900">
       <h2 className="text-2xl font-bold text-center mb-4 text-gray-800 dark:text-gray-100">
-        Draw Board
+        TeX Canvas
       </h2>
 
+      {/* Toolbar with left-aligned tools and right-aligned actions */}
       <Toolbar
         tool={tool}
         setTool={setTool}
@@ -287,43 +277,76 @@ const CanvasBoard = ({
         setHistorySize={setHistorySize}
         apiKey={apiKey}
         setApiKey={setApiKey}
+        transcribe={transcribe}
+        isTranscribing={isLoading}
       />
 
+      {/* Canvas with top-left controls */}
+      <div className="relative flex-1 mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+        {/* Top-left: Color + Size */}
+        <div className="absolute top-6 left-6 flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md z-10 border border-gray-200 dark:border-gray-600">
+          <label className="relative group">
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              disabled={isLoading}
+              className={`w-9 h-9 rounded-full appearance-none cursor-pointer border-2 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-all duration-200 ${
+                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-500"
+              }`}
+              style={{ background: "transparent" }}
+              aria-label="Select brush color"
+            />
+            <span
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{ backgroundColor: color }}
+            />
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+              Brush Color
+            </span>
+          </label>
 
-      <div className="flex-1 mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={360}
-          className="w-full h-full rounded-lg border-2 border-gray-300 dark:border-gray-600"
-          style={{
-            backgroundColor: "#ffffff",
-            cursor: tool === "eraser" ? "crosshair" : cursorSvg,
-          }}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-        />
+          <label className="flex items-center gap-2">
+            <input
+              type="range"
+              min="1"
+              max="30"
+              value={tool === "eraser" ? eraserSize : brushSize}
+              onChange={(e) => {
+                const v = +e.target.value;
+                if (tool === "eraser") setEraserSize(v);
+                else setBrushSize(v);
+              }}
+              disabled={isLoading}
+              className={`w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-all duration-200 custom-range ${
+                isLoading ? "opacity-50" : ""
+              }`}
+              aria-label={tool === "eraser" ? "Eraser size" : "Brush size"}
+            />
+            <span className="w-8 text-center text-xs font-mono text-gray-700 dark:text-gray-300">
+              {tool === "eraser" ? eraserSize : brushSize}px
+            </span>
+          </label>
+        </div>
+
+        {/* Canvas */}
+        <div className="absolute inset-4 overflow-hidden rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white">
+          <canvas
+            ref={canvasRef}
+            width={600}
+            height={360}
+            className="w-full h-auto block"
+            style={{
+              backgroundColor: "#ffffff",
+              cursor: tool === "eraser" ? "crosshair" : cursorSvg,
+            }}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+          />
+        </div>
       </div>
-
-      {/* Bottom controls (no API key input here anymore) */}
-<div className="flex gap-3 justify-center items-center">
-  {!apiKey && (
-    <span className="text-xs text-amber-600 dark:text-amber-400">
-      Set your API key in Settings to enable OCR.
-    </span>
-  )}
-  <button
-    onClick={transcribe}
-    disabled={isLoading || !apiKey}
-    className="px-6 py-2.5 rounded-lg font-medium text-white transition-colors disabled:opacity-60"
-    style={{ backgroundColor: isLoading ? "#6b7280" : "#3b82f6" }}
-  >
-    {isLoading ? "Processing..." : "Transcribe"}
-  </button>
-</div>
-  
     </div>
   );
 };

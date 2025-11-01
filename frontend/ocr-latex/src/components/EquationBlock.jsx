@@ -74,50 +74,52 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
   const content = (tex || "").trim() || "\\text{(enter text)}";
   const [copied, setCopied] = useState(false);
 
-  // Reset "Copied!" when the equation text changes
+  // Reset "Copied!" when equation changes
   useEffect(() => setCopied(false), [tex]);
 
-  // Robustly obtain SVG XML (live if available; else generate via MathJax)
+  // Auto-hide "Copied!" after 2 seconds
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
+
+  // Robustly obtain SVG XML
   const getSvgXML = useCallback(async () => {
     const root = cardRef.current;
 
-    // 1) Try live rendered SVG inside this block
+    // 1) Try live rendered SVG
     const live = root?.querySelector("mjx-container svg");
     if (live) return svgToXML(live);
 
-    // 2) Generate off-DOM via MathJax
+    // 2) Generate via MathJax
     const MJ = window?.MathJax;
     if (!MJ) throw new Error("MathJax not found on window.");
 
-    // Wait for MathJax startup if present
     if (MJ.startup?.promise) {
-      try { await MJ.startup.promise; } catch {} // ignore
+      try { await MJ.startup.promise; } catch {}
     }
 
-    // Prefer async API
     if (typeof MJ.tex2svgPromise === "function") {
       const doc = await MJ.tex2svgPromise(`\\[ ${content} \\]`, { display: true });
       const svg = doc?.querySelector("svg");
       if (svg) return svgToXML(svg);
     }
 
-    // Fallback to sync API
     if (typeof MJ.tex2svg === "function") {
       const doc = MJ.tex2svg(`\\[ ${content} \\]`, { display: true });
       const svg = doc?.querySelector("svg");
       if (svg) return svgToXML(svg);
     }
 
-    throw new Error(
-      "Unable to obtain SVG. Ensure MathJax loads 'input/tex' and 'output/svg'."
-    );
+    throw new Error("Unable to obtain SVG. Ensure MathJax loads 'input/tex' and 'output/svg'.");
   }, [content]);
 
   const onCopyPNG = useCallback(async () => {
     try {
       const xml = await getSvgXML();
       const dataURL = await svgXMLToPNG(xml, { targetWidthPx: 1600 });
-      // Convert dataURL -> Blob
       const resp = await fetch(dataURL);
       const blob = await resp.blob();
 
@@ -168,7 +170,7 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
       ref={cardRef}
       id={`eq-${index}`}
       className={[
-        "relative rounded-xl border p-4 my-4 cursor-pointer transition",
+        "group relative rounded-xl border p-4 my-4 cursor-pointer transition",
         "bg-gray-50 dark:bg-gray-900",
         "border-gray-200 dark:border-gray-700",
         active ? "ring-2 ring-blue-500 border-blue-400" : "hover:border-blue-300"
@@ -176,69 +178,78 @@ export default function EquationBlock({ id, index, tex, active, onSelect, onDele
       onClick={onSelect}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onSelect();
+      }}
       aria-pressed={active}
       aria-label={`Equation block ${index + 1}${active ? " (active)" : ""}`}
     >
-      {/* Action Buttons */}
-      {/* Action Buttons – now with icons */}
-<div className="absolute right-3 top-3 flex gap-2">
-  {/* ---------- Copy PNG ---------- */}
-  <button
-    onClick={(e) => { e.stopPropagation(); onCopyPNG(); }}
-    disabled={copied}
-    className={`
-      flex items-center gap-1 text-xs px-2 py-1 rounded border transition
-      ${copied
-        ? "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-default"
-        : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-      }
-    `}
-    title={copied ? "Copied!" : "Copy PNG to clipboard"}
-    aria-label="Copy equation PNG to clipboard"
-  >
-    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-    <span className="hidden sm:inline">{copied ? "Copied!" : "Copy"}</span>
-  </button>
+      {/* Action Buttons – Hidden until hover or active */}
+      <div
+        className={`
+          absolute right-3 top-3 flex gap-2 transition-opacity duration-200
+          ${active
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+          }
+        `}
+      >
+        {/* Copy PNG */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onCopyPNG(); }}
+          disabled={copied}
+          className={`
+            flex items-center gap-1 text-xs px-2 py-1 rounded border transition
+            ${copied
+              ? "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-default"
+              : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }
+          `}
+          title={copied ? "Copied!" : "Copy PNG to clipboard"}
+          aria-label="Copy equation PNG to clipboard"
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline">{copied ? "Copied!" : "Copy"}</span>
+        </button>
 
-  {/* ---------- Download PNG ---------- */}
-  <button
-    onClick={(e) => { e.stopPropagation(); onExportPNG(); }}
-    className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-    title="Download as PNG"
-    aria-label="Download equation as PNG"
-  >
-    <Download className="w-3.5 h-3.5" />
-    <span className="hidden sm:inline">PNG</span>
-  </button>
+        {/* Download PNG */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onExportPNG(); }}
+          className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          title="Download as PNG"
+          aria-label="Download equation as PNG"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">PNG</span>
+        </button>
 
-  {/* ---------- Download SVG ---------- */}
-  <button
-    onClick={(e) => { e.stopPropagation(); onExportSVG(); }}
-    className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-    title="Download as SVG"
-    aria-label="Download equation as SVG"
-  >
-    <FileCode className="w-3.5 h-3.5" />
-    <span className="hidden sm:inline">SVG</span>
-  </button>
+        {/* Download SVG */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onExportSVG(); }}
+          className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          title="Download as SVG"
+          aria-label="Download equation as SVG"
+        >
+          <FileCode className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">SVG</span>
+        </button>
 
-  {/* ---------- Delete ---------- */}
-  <button
-    onClick={(e) => { e.stopPropagation(); onDelete(); }}
-    className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition"
-    title="Delete this block"
-    aria-label="Delete this equation block"
-  >
-    <Trash2 className="w-3.5 h-3.5" />
-    <span className="hidden sm:inline">Delete</span>
-  </button>
-</div>
+        {/* Delete */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition"
+          title="Delete this block"
+          aria-label="Delete this equation block"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Delete</span>
+        </button>
+      </div>
 
       {/* Rendered Equation */}
       <MathJax dynamic hideUntilTypeset="every">
         <div className="flex justify-center items-center w-full min-h-20 py-4">
-          <div>{`${tex || "(enter text)"}`}</div>
+          <div>{tex || "(enter text)"}</div>
         </div>
       </MathJax>
     </div>

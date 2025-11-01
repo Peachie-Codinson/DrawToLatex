@@ -11,3 +11,131 @@ mjx-container { isolation: isolate; }
 
 mjx-container[jax="SVG"] svg { vertical-align: 0 !important; }
 .equation { line-height: 1.2; }
+/* src/index.css or any global stylesheet */
+.resizer {
+  @apply h-2 bg-gray-300 dark:bg-gray-700 cursor-row-resize hover:bg-blue-400 transition-colors;
+}
+
+/* Custom range input styling */
+/* Custom range input styling (unchanged from previous suggestion) */
+.custom-range::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  background: #e5e7eb; /* gray-200 */
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+.custom-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  background: #2563eb; /* blue-600 */
+  border-radius: 50%;
+  margin-top: -0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.custom-range:hover::-webkit-slider-thumb {
+  background: #1d4ed8; /* blue-700 */
+  transform: scale(1.1);
+}
+
+.custom-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* blue-500 with opacity */
+}
+
+.custom-range:disabled::-webkit-slider-thumb {
+  background: #9ca3af; /* gray-400 */
+  cursor: not-allowed;
+  transform: scale(1);
+}
+
+.custom-range::-moz-range-track {
+  height: 0.5rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+}
+
+.custom-range::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  background: #2563eb;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.custom-range:hover::-moz-range-thumb {
+  background: #1d4ed8;
+  transform: scale(1.1);
+}
+
+.custom-range:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.custom-range:disabled::-moz-range-thumb {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: scale(1);
+}
+
+/* Dark mode styles for range */
+.dark .custom-range::-webkit-slider-runnable-track {
+  background: #4b5563; /* gray-600 */
+}
+
+.dark .custom-range::-webkit-slider-thumb {
+  background: #60a5fa; /* blue-400 */
+}
+
+.dark .custom-range:hover::-webkit-slider-thumb {
+  background: #3b82f6; /* blue-500 */
+}
+
+.dark .custom-range::-moz-range-track {
+  background: #4b5563;
+}
+
+.dark .custom-range::-moz-range-thumb {
+  background: #60a5fa;
+}
+
+.dark .custom-range:hover::-moz-range-thumb {
+  background: #3b82f6;
+}
+
+/* Custom color picker styling */
+input[type="color"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 0;
+  border: none;
+  background: transparent;
+  width: 2.25rem; /* Matches w-9 (9 * 0.25rem) */
+  height: 2.25rem; /* Matches h-9 */
+  cursor: pointer;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 9999px;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 9999px;
+}
+
+input[type="color"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
