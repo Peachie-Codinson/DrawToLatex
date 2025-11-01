@@ -82,25 +82,25 @@ export default function OutputPane({
           <Reorder.Group axis="y" values={blocks} onReorder={handleReorder} className="space-y-4">
             {blocks.map((b, i) => (
               <Reorder.Item
-                key={b.id}
-                value={b}
-                whileDrag={{
-                  scale: 1.03,
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
-                  zIndex: 10,
-                }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                layout="position"
-              >
-                <EquationBlock
-                  id={b.id}
-                  index={i}
-                  tex={b.tex ?? ""}
-                  active={b.id === activeId}
-                  onSelect={() => setActive(b.id)}
-                  onDelete={() => deleteBlock(b.id)}
-                />
-              </Reorder.Item>
+  key={b.id}
+  value={b}
+  whileDrag={{
+    scale: 1.03,
+    boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
+    zIndex: 10,
+  }}
+  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+  layout="position"   // ONLY animate position, NOT size
+>
+  <EquationBlock
+    id={b.id}
+    index={i}
+    tex={b.tex ?? ""}
+    active={b.id === activeId}
+    onSelect={() => setActive(b.id)}
+    onDelete={() => deleteBlock(b.id)}
+  />
+</Reorder.Item>
             ))}
           </Reorder.Group>
         )}

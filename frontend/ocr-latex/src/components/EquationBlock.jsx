@@ -243,18 +243,37 @@ export default function EquationBlock({
         </button>
       </div>
 
-      {/* ---------- RENDERED EQUATION ---------- */}
-      <div className="flex justify-center items-center w-full py-4" style={{ minHeight: "5rem" }}>
-        <MathJax
-          dynamic
-          hideUntilTypeset="first"
-          renderMode="post"
-          layoutId={layoutId}
-          layout="position"
-        >
-          <div className="inline-block text-center">{content}</div>
-        </MathJax>
-      </div>
+      {/* ---------- RENDERED EQUATION – FIXED HEIGHT ---------- */}
+      {/* ---------- RENDERED EQUATION – PERFECT CENTER ---------- */}
+<div
+  className="w-full flex items-center justify-center"
+  style={{
+    height: "6rem",
+    minHeight: "6rem",
+  }}
+>
+  <MathJax
+    dynamic
+    hideUntilTypeset="first"
+    renderMode="post"
+    layoutId={layoutId}
+    layout="position"
+  >
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        width: "100%",
+      }}
+    >
+      <span style={{ display: "inline-block" }}>
+        {content}
+      </span>
+    </div>
+  </MathJax>
+</div>
     </div>
   );
 }

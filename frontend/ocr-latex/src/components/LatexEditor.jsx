@@ -24,8 +24,7 @@ const LatexEditor = ({ latex = "", setLatex, hasActive }) => {
     }
   }, [copied]);
 
-  // ---------- DEBOUNCE ----------
-  /** @type {React.MutableRefObject<number | null>} */
+  
   const timeoutRef = useRef(null);
 
   const debouncedSetLatex = (newVal) => {
