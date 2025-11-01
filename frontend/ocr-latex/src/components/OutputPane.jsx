@@ -56,7 +56,7 @@ export default function OutputPane({ latex }) {
         >
           {equations.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 italic">
-              No equations found. Use $$ $$ or \[ \] delimiters.
+              No equations found. 
             </div>
           ) : (
             equations.map((eq, i) => (
