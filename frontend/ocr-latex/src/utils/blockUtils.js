@@ -6,19 +6,20 @@ export const makeId = () =>
  * Extract raw equation lines from a block's LaTeX.
  * Handles:
  *   - Single \[ … \]
- *   - Multiple \[ … \] … \[ … \]
+ *   - \begin{gathered} … \end{gathered}
  *   - \begin{align*} … \end{align*}
  */
 export const extractRawLines = (tex) => {
   const lines = [];
   const trimmed = tex.trim();
 
-  // --- Multiple \[ … \] ---
-  const centeredMatches = trimmed.match(/\\\[([\s\S]*?)\\\]/g);
+  const centeredMatches = trimmed.match(/\\begin\{gathered\}\s*([\s\S]*?)\s*\\end\{gathered\}/i);
   if (centeredMatches) {
-    for (const match of centeredMatches) {
-      const inner = match.replace(/^\\\[|\\\]$/g, "").trim();
-      if (inner) lines.push(inner);
+    const body = centeredMatches[1];
+    const rows = body.split(/\\\\\s*/).map((r) => r.trim()).filter(Boolean);
+    for (const row of rows) {
+      const cleaned = row.replace(/&/g, "").trim(); // remove alignment tabs
+      if (cleaned) lines.push(cleaned);
     }
     return lines;
   }
