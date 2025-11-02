@@ -1,9 +1,10 @@
 // src/App.jsx
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import CanvasBoard from "./components/CanvasBoard";
 import LatexEditor from "./components/LatexEditor";
 import OutputPane from "./components/OutputPane";
 import { MathJaxContext } from "better-react-mathjax";
+import { makeId } from "./utils/blockUtils";
 
 const mathJaxConfig = {
   loader: { load: ["input/tex", "output/svg", "[tex]/ams"] },
@@ -24,25 +25,13 @@ const mathJaxConfig = {
   },
 };
 
-const makeId = () =>
-  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 function App() {
   const [blocks, setBlocks] = useState(() => [{ id: makeId(), tex: "" }]);
   const [activeId, setActiveId] = useState(() => blocks[0].id);
   const [apiKey, setApiKey] = useState(sessionStorage.getItem("OPENAI_KEY") || "");
   const [isLoading, setIsLoading] = useState(false);
-
-  // Canvas height in % (only used on desktop)
   const [canvasPct, setCanvasPct] = useState(70);
-
-  // Detect mobile to disable resizer
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const activeBlock = useMemo(
     () => blocks.find((b) => b.id === activeId) || null,
@@ -79,10 +68,18 @@ function App() {
 
   const setActive = useCallback((id) => setActiveId(id), []);
 
-  // Resizer – only active on desktop
+  // NEW: bulk replace (used by group / split)
+  const replaceBlocks = useCallback((newArray) => {
+    setBlocks(newArray);
+    // keep the *last* created block active
+    if (newArray.length) setActiveId(newArray[newArray.length - 1].id);
+  }, []);
+
+  /* --------------------------------------------------------------- */
+  /*  Resizer – unchanged                                            */
+  /* --------------------------------------------------------------- */
   const startResize = useCallback(
     (e) => {
-      if (isMobile) return;
       e.preventDefault();
 
       const resizer = e.currentTarget;
@@ -108,61 +105,35 @@ function App() {
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
     },
-    [canvasPct, isMobile]
+    [canvasPct]
   );
 
   return (
     <MathJaxContext config={mathJaxConfig}>
-      <div className="flex flex-col md:flex-row h-screen font-sans bg-gray-50 dark:bg-gray-900 overflow-hidden">
-        {/* ========== MOBILE: STACKED, DESKTOP: LEFT COLUMN ========== */}
-        <div className="flex-1 flex flex-col md:w-1/2 md:border-r md:border-gray-200 dark:md:border-gray-700 overflow-hidden">
-          {/* Canvas */}
-          <div
-            className="relative flex flex-col bg-white dark:bg-gray-800"
-            style={{ height: isMobile ? "40vh" : `${canvasPct}%` }}
-          >
-            <CanvasBoard
-              apiKey={apiKey}
-              setApiKey={setApiKey}
-              setLatex={setLatex}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-            />
+      <div className="grid grid-cols-1 md:grid-cols-2 h-screen font-sans bg-gray-50 dark:bg-gray-900">
+        {/* LEFT COLUMN */}
+        <div className="flex flex-col border-r border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div style={{ height: `${canvasPct}%` }} className="relative flex flex-col bg-white dark:bg-gray-800">
+            <CanvasBoard apiKey={apiKey} setApiKey={setApiKey} setLatex={setLatex} isLoading={isLoading} setIsLoading={setIsLoading} />
           </div>
 
-          {/* Resizer – hidden on mobile */}
-          {!isMobile && (
-            <div
-              className="h-2 bg-gray-300 dark:bg-gray-700 cursor-row-resize hover:bg-blue-400 transition-colors"
-              onMouseDown={startResize}
-              title="Drag to resize"
-            />
-          )}
+          <div className="h-2 bg-gray-300 dark:bg-gray-700 cursor-row-resize hover:bg-blue-400 transition-colors" onMouseDown={startResize} title="Drag to resize" />
 
-          {/* LaTeX Editor */}
-          <div
-            className="flex flex-col min-h-0"
-            style={{ height: isMobile ? "30vh" : `${100 - canvasPct}%` }}
-          >
-            <LatexEditor
-              latex={activeBlock?.tex ?? ""}
-              setLatex={setLatex}
-              hasActive={!!activeBlock}
-            />
+          <div style={{ height: `${100 - canvasPct}%` }} className="flex flex-col min-h-0">
+            <LatexEditor latex={activeBlock?.tex ?? ""} setLatex={setLatex} hasActive={!!activeBlock} />
           </div>
         </div>
 
-        {/* ========== OUTPUT PANE – FULL WIDTH ON MOBILE ========== */}
-        <div className="flex-1 md:w-1/2 overflow-hidden">
-          <OutputPane
-            blocks={blocks}
-            activeId={activeId}
-            setActive={setActive}
-            addBlock={addBlock}
-            deleteBlock={deleteBlock}
-            updateBlocksOrder={setBlocks}
-          />
-        </div>
+        {/* RIGHT COLUMN */}
+        <OutputPane
+          blocks={blocks}
+          activeId={activeId}
+          setActive={setActive}
+          addBlock={addBlock}
+          deleteBlock={deleteBlock}
+          updateBlocksOrder={setBlocks}
+          replaceBlocks={replaceBlocks}  
+        />
       </div>
     </MathJaxContext>
   );

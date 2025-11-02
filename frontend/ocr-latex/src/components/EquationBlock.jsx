@@ -1,13 +1,7 @@
 // src/components/EquationBlock.jsx
-import React, { useCallback, useRef, useEffect, useState, useMemo} from "react";
+import React, { useCallback, useRef, useEffect, useState, useMemo } from "react";
 import { MathJax } from "better-react-mathjax";
-import {
-  Copy,
-  Check,
-  Download,
-  FileCode,
-  Trash2,
-} from "lucide-react";
+import { Copy, Check, Download, FileCode, Trash2 } from "lucide-react";
 
 /* ---------- tiny utils ---------- */
 const safeName = (s) =>
@@ -16,14 +10,12 @@ const safeName = (s) =>
     .replace(/[^a-z0-9,;_=^{}[\]()+-]/gi, "")
     .slice(0, 80) || "equation";
 
-/* Serialize an <svg> (no padding, no background) */
 const svgToXML = (svgEl) => {
   const svg = svgEl.cloneNode(true);
   svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   return new XMLSerializer().serializeToString(svg);
 };
 
-/* Convert SVG XML to PNG dataURL (transparent bg), with optional target pixel width */
 async function svgXMLToPNG(xml, { targetWidthPx, scale = 4 } = {}) {
   const vb = xml.match(/viewBox="([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)"/);
   let w = 0, h = 0;
@@ -68,12 +60,16 @@ async function svgXMLToPNG(xml, { targetWidthPx, scale = 4 } = {}) {
   ctx.drawImage(img, 0, 0, outW, outH);
   return canvas.toDataURL("image/png");
 }
+
 export default function EquationBlock({
   id,
   index,
   tex,
   active,
-  onSelect,
+  selected,
+  onSelect,          // activate block
+  onToggleSelect,    // toggle selection (Shift + click only)
+  onClearSelection,  // clear all selection (normal click)
   onDelete,
 }) {
   const cardRef = useRef(null);
@@ -82,8 +78,6 @@ export default function EquationBlock({
   const [copied, setCopied] = useState(false);
   useEffect(() => setCopied(false), [tex]);
 
-  // Use JSDoc for type safety (no TS types in .jsx)
-  /** @type {() => Promise<string>} */
   const getSvgXML = useCallback(async () => {
     const root = cardRef.current;
     const live = root?.querySelector("mjx-container svg");
@@ -91,7 +85,6 @@ export default function EquationBlock({
 
     const MJ = window.MathJax;
     if (!MJ) throw new Error("MathJax not found.");
-
     if (MJ.startup?.promise) await MJ.startup.promise.catch(() => {});
 
     if (typeof MJ.tex2svgPromise === "function") {
@@ -99,16 +92,13 @@ export default function EquationBlock({
       const svg = doc?.querySelector("svg");
       if (svg) return svgToXML(svg);
     }
-
     if (typeof MJ.tex2svg === "function") {
       const doc = MJ.tex2svg(`\\[ ${content} \\]`, { display: true });
       const svg = doc?.querySelector("svg");
       if (svg) return svgToXML(svg);
     }
-
     throw new Error("Unable to obtain SVG.");
   }, [content]);
-
 
   const onCopyPNG = useCallback(async () => {
     try {
@@ -129,7 +119,7 @@ export default function EquationBlock({
     }
   }, [getSvgXML]);
 
-  const onExportPNG = useCallback(async () => {
+   const onExportPNG = useCallback(async () => {
     try {
       const xml = await getSvgXML();
       const dataURL = await svgXMLToPNG(xml, { targetWidthPx: 1600 });
@@ -161,6 +151,21 @@ export default function EquationBlock({
 
   const layoutId = useMemo(() => `eq-${id}`, [id]);
 
+  // === CLICK HANDLER: Shift + click = toggle, normal = activate + clear ===
+  const handleClick = (e) => {
+    e.stopPropagation();
+
+    if (e.shiftKey) {
+      // Shift + click → toggle selection of THIS block only
+      onToggleSelect();
+      return;
+    }
+
+    // Normal click → activate + clear all selection
+    onSelect();
+    onClearSelection();
+  };
+
   return (
     <div
       ref={cardRef}
@@ -170,18 +175,21 @@ export default function EquationBlock({
         "bg-gray-50 dark:bg-gray-900",
         "border-gray-200 dark:border-gray-700",
         active ? "ring-2 ring-blue-500 border-blue-400" : "hover:border-blue-300",
+        selected ? "ring-2 ring-green-500" : "",
       ].join(" ")}
-      onClick={onSelect}
+      onClick={handleClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onSelect();
+        if (e.key === "Enter" || e.key === " ") {
+          onSelect();
+          onClearSelection();
+        }
       }}
       aria-pressed={active}
       aria-label={`Equation block ${index + 1}${active ? " (active)" : ""}`}
     >
-    
-      {/* Action Buttons – Hidden until hover or active */}
+      {/* Action Buttons */}
       <div
         className={`
           absolute right-3 top-3 flex gap-2 transition-opacity duration-200
@@ -191,89 +199,47 @@ export default function EquationBlock({
           }
         `}
       >
-        {/* Copy PNG */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onCopyPNG(); }}
-          disabled={copied}
-          className={`
-            flex items-center gap-1 text-xs px-2 py-1 rounded border transition
-            ${copied
+        <button onClick={(e) => { e.stopPropagation(); onCopyPNG(); }} disabled={copied}
+          className={`flex items-center gap-1 text-xs px-2 py-1 rounded border transition ${
+            copied
               ? "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-default"
               : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }
-          `}
-          title={copied ? "Copied!" : "Copy PNG to clipboard"}
-          aria-label="Copy equation PNG to clipboard"
-        >
+          }`}
+          title={copied ? "Copied!" : "Copy PNG to clipboard"}>
           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           <span className="hidden sm:inline">{copied ? "Copied!" : "Copy"}</span>
         </button>
 
-        {/* Download PNG */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onExportPNG(); }}
+        <button onClick={(e) => { e.stopPropagation(); onExportPNG(); }}
           className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-          title="Download as PNG"
-          aria-label="Download equation as PNG"
-        >
+          title="Download as PNG">
           <Download className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">PNG</span>
         </button>
 
-        {/* Download SVG */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onExportSVG(); }}
+        <button onClick={(e) => { e.stopPropagation(); onExportSVG(); }}
           className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-          title="Download as SVG"
-          aria-label="Download equation as SVG"
-        >
+          title="Download as SVG">
           <FileCode className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">SVG</span>
         </button>
 
-        {/* Delete */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition"
-          title="Delete this block"
-          aria-label="Delete this equation block"
-        >
+          title="Delete this block">
           <Trash2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Delete</span>
         </button>
       </div>
 
-      {/* ---------- RENDERED EQUATION – FIXED HEIGHT ---------- */}
-      {/* ---------- RENDERED EQUATION – PERFECT CENTER ---------- */}
-<div
-  className="w-full flex items-center justify-center"
-  style={{
-    height: "6rem",
-    minHeight: "6rem",
-  }}
->
-  <MathJax
-    dynamic
-    hideUntilTypeset="first"
-    renderMode="post"
-    layoutId={layoutId}
-    layout="position"
-  >
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100%",
-        width: "100%",
-      }}
-    >
-      <span style={{ display: "inline-block" }}>
-        {content}
-      </span>
-    </div>
-  </MathJax>
-</div>
+      {/* MathJax */}
+      <div className="w-full flex items-center justify-center" style={{ minHeight: "6rem" }}>
+        <MathJax dynamic hideUntilTypeset="first" renderMode="post" layoutId={layoutId} layout="position">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
+            <span style={{ display: "inline-block" }}>{content}</span>
+          </div>
+        </MathJax>
+      </div>
     </div>
   );
 }
